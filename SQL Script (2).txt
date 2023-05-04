@@ -1,0 +1,241 @@
+CREATE DATABASE [T]
+Go
+Use T
+go
+CREATE TABLE [Users](
+	[UserID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+	[Login] [varchar](20) NOT NULL UNIQUE,
+	[Password] [varchar](50) NULL,
+	[FirstName] [varchar](40) NULL,
+	[LastName] [varchar](40) NULL,
+	[DateOfBirth] [date] NULL,
+	[Gender] [varchar](1) NULL CHECK (Gender='M' OR Gender='F')
+) 
+GO
+CREATE TABLE [Orders](
+	[OrderID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+	[UserID] [int] NOT NULL,
+	[OrderDate] [datetime] NULL CHECK(OrderDate <= GETDATE()),
+	[OrderCost] [money] NULL,
+	[ItemsDescription] [varchar](1000) NULL,
+	[ShippingAddress] [varchar](1000) NULL,
+
+
+) 
+GO
+ALTER TABLE [Orders] ADD  CONSTRAINT [FK_Orders_Users] FOREIGN KEY([UserID])
+REFERENCES [Users] ([UserID])
+GO
+CREATE TRIGGER tr_DeleteUser ON Users
+FOR DELETE
+AS
+BEGIN
+  SET NOCOUNT ON;
+  
+  IF EXISTS (SELECT * FROM deleted d INNER JOIN Orders o ON d.UserID = o.UserID)
+  BEGIN
+    RAISERROR('Cannot delete user with assigned orders', 16, 1);
+    ROLLBACK TRANSACTION;
+  END
+END
+GO
+CREATE TRIGGER tr_CreateOrder ON Orders
+FOR INSERT
+AS
+BEGIN
+SET NOCOUNT ON;
+
+DECLARE @UserID int, @OrderDate date;
+
+SELECT @UserID = UserID, @OrderDate = CAST(OrderDate AS date) FROM inserted;
+
+IF EXISTS (SELECT * FROM Orders WHERE UserID = @UserID AND CAST(OrderDate AS date) = @OrderDate AND OrderID NOT IN (SELECT OrderID FROM inserted))
+BEGIN
+RAISERROR('Cannot create more than one order per day per user', 16, 1);
+ROLLBACK TRANSACTION;
+END
+END
+GO
+create procedure spUpdateUsers 
+(    
+@Id int,    
+@login varchar(20),
+@password varchar(50),
+@firstName varchar(40),
+@lastName varchar(40),
+@dateofbirth date,
+@gender varchar(1) 
+)    
+as    
+begin    
+    update Users   
+    set Login=@login,
+	Password=@password,
+	FirstName=@firstName,
+	LastName=@lastName,
+	DateOfBirth=@dateofbirth,
+	Gender=@gender
+    where UserID=@Id    
+end 
+go
+create procedure spUpdateOrders
+(    
+@Id int,    
+@userId int,
+@orderdate datetime,
+@ordercost money,
+@itemsdescription varchar(1000),
+@shippingaddress varchar(1000) 
+)    
+as    
+begin    
+    update Orders  
+    set UserID=@userId,
+	OrderDate=@orderdate,
+	OrderCost=@ordercost,
+	ItemsDescription=@itemsdescription,
+	ShippingAddress=@shippingaddress
+	
+    where OrderID=@Id    
+end 
+go
+INSERT INTO [Users]
+           ([Login]
+           ,[Password]
+           ,[FirstName]
+           ,[LastName]
+           ,[DateOfBirth]
+           ,[Gender])
+     VALUES
+           ('Test'
+           ,'Test'
+           ,'Test FirstName'
+           ,'Test LastName'
+           ,'2023-05-04'
+           ,'F')
+GO
+INSERT INTO [Users]
+           ([Login]
+           ,[Password]
+           ,[FirstName]
+           ,[LastName]
+           ,[DateOfBirth]
+           ,[Gender])
+     VALUES
+           ('Test1'
+           ,'Test1'
+           ,'Test1 FirstName'
+           ,'Test1 LastName'
+           ,'2023-02-04'
+           ,'M')
+GO
+INSERT INTO [Users]
+           ([Login]
+           ,[Password]
+           ,[FirstName]
+           ,[LastName]
+           ,[DateOfBirth]
+           ,[Gender])
+     VALUES
+           ('Test2'
+           ,'Test2'
+           ,'Test2 FirstName'
+           ,'Test2 LastName'
+           ,'2023-01-04'
+           ,'F')
+GO
+INSERT INTO [Users]
+           ([Login]
+           ,[Password]
+           ,[FirstName]
+           ,[LastName]
+           ,[DateOfBirth]
+           ,[Gender])
+     VALUES
+           ('Test3'
+           ,'Test3'
+           ,'Test3 FirstName'
+           ,'Test3 LastName'
+           ,'2023-03-04'
+           ,'M')
+GO
+INSERT INTO [Users]
+           ([Login]
+           ,[Password]
+           ,[FirstName]
+           ,[LastName]
+           ,[DateOfBirth]
+           ,[Gender])
+     VALUES
+           ('Test4'
+           ,'Test4'
+           ,'Test 4FirstName'
+           ,'Test4 LastName'
+           ,'2023-04-04'
+           ,'F')
+GO
+INSERT INTO [Orders]
+           ([UserID]
+           ,[OrderDate]
+           ,[OrderCost]
+           ,[ItemsDescription]
+           ,[ShippingAddress])
+     VALUES
+           (1
+           ,'2023-03-03'
+           ,100
+           ,'Test description'
+           ,'Test address')
+GO
+INSERT INTO [Orders]
+           ([UserID]
+           ,[OrderDate]
+           ,[OrderCost]
+           ,[ItemsDescription]
+           ,[ShippingAddress])
+     VALUES
+           (2
+           ,'2023-02-03'
+           ,100
+           ,'Test1 description'
+           ,'Test1 address')
+GO
+INSERT INTO [Orders]
+           ([UserID]
+           ,[OrderDate]
+           ,[OrderCost]
+           ,[ItemsDescription]
+           ,[ShippingAddress])
+     VALUES
+           (3
+           ,'2023-03-03'
+           ,120
+           ,'Test3 description'
+           ,'Test3 address')
+GO
+INSERT INTO [Orders]
+           ([UserID]
+           ,[OrderDate]
+           ,[OrderCost]
+           ,[ItemsDescription]
+           ,[ShippingAddress])
+     VALUES
+           (1
+           ,'2023-02-03'
+           ,100
+           ,'Test description'
+           ,'Test address')
+GO
+INSERT INTO [Orders]
+           ([UserID]
+           ,[OrderDate]
+           ,[OrderCost]
+           ,[ItemsDescription]
+           ,[ShippingAddress])
+     VALUES
+           (4
+           ,'2023-01-03'
+           ,100
+           ,'Test4 description'
+           ,'Test4 address')
+GO
